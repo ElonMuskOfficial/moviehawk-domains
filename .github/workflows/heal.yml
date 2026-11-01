@@ -1,0 +1,57 @@
+name: Heal domains
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+# One run at a time: two would both commit the same move.
+concurrency:
+  group: heal
+  cancel-in-progress: false
+
+jobs:
+  heal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - id: heal
+        run: node heal.mjs
+
+      - name: Commit the new domains
+        if: steps.heal.outputs.changed == 'true'
+        env:
+          MESSAGE: ${{ steps.heal.outputs.message }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -am "$MESSAGE"
+          git push
+
+      # One open issue while a domain does not answer, closed when every one does again.
+      - name: Report domains that do not answer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UNREACHABLE: ${{ steps.heal.outputs.unreachable }}
+        run: |
+          issue=$(gh issue list --state open --label unreachable --json number --jq '.[0].number')
+          if [ -n "$UNREACHABLE" ]; then
+            body=$(printf 'These domains do not answer, and redirect nowhere. Put each site'"'"'s new domain in domains.json by hand.\n\n%s\n' "$UNREACHABLE")
+            if [ -z "$issue" ]; then
+              gh label create unreachable --color d73a4a --force
+              gh issue create --title 'Domains that do not answer' --label unreachable --body "$body"
+            else
+              gh issue edit "$issue" --body "$body"
+            fi
+          elif [ -n "$issue" ]; then
+            gh issue close "$issue" --comment 'Every domain answers again.'
+          fi
