@@ -12,7 +12,7 @@ https://raw.githubusercontent.com/ElonMuskOfficial/moviehawk-domains/main/domain
 
 ## How it heals
 
-Every 30 minutes, [`heal.yml`](.github/workflows/heal.yml) runs [`heal.mjs`](heal.mjs), which opens
+Twice a day (05:17 and 17:17 UTC), [`heal.yml`](.github/workflows/heal.yml) runs [`heal.mjs`](heal.mjs), which opens
 each domain at its root:
 
 - **It redirects to another domain of the same site** (`new9.hdhub4u.cl` → `new10.hdhub4u.cl`):

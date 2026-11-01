@@ -1,8 +1,10 @@
 name: Heal domains
 
 on:
+  # Twice a day: a site moves every few weeks, and its old domain redirects to the new one for
+  # days. Not on the hour, when GitHub's scheduled runs are delayed the most.
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '17 5,17 * * *'
   workflow_dispatch:
 
 permissions:
