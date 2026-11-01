@@ -31,7 +31,9 @@ async function check(label, origin) {
     const response = await fetch(`${origin}/`, { headers: { 'user-agent': USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS) });
     await response.body?.cancel();
     const final = new URL(response.url);
-    if (!response.ok) return { label, origin, problem: `HTTP ${response.status} at ${final.origin}` };
+    // A 4xx is the site answering: HubCDN's root is HTTP 403 (2026-11-01), its files answer. A 5xx
+    // (and Cloudflare's 52x) is a site that is down.
+    if (response.status >= 500) return { label, origin, problem: `HTTP ${response.status} at ${final.origin}` };
     if (!isDomainOf(final.hostname, label)) return { label, origin, problem: `redirects to ${final.origin}, not a domain of ${label}` };
     return { label, origin, current: final.origin };
   } catch (error) {
